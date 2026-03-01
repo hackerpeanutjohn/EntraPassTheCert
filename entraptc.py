@@ -178,7 +178,7 @@ def request_p2pcert(prt, sessionkey, pfx_outpath, pfx_password, proxy):
         headers = json.loads(base64_urldecode(headerdata.encode()))
         decrypted_data = decrypt_with_session_key(sessionkey, base64.b64decode(headers['ctx']), base64_urldecode(ciphertext.encode()), base64_urldecode(iv.encode()))
         data = json.loads(decrypted_data.decode())
-        cert = f'-----BEGIN CERTIFICATE-----\n{data['x5c']}\n-----END CERTIFICATE-----'
+        cert = "-----BEGIN CERTIFICATE-----\n" + data["x5c"] + "\n-----END CERTIFICATE-----"
 
         pem_to_pfx(private_key, cert.encode(), pfx_outpath, pfx_password)
         success('successfully acquired P2P cert!')
