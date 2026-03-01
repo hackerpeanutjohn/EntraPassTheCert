@@ -1,4 +1,23 @@
-asyauth
+requests
+impacket
+PyJWT
+cryptography
 aardwolf
+asyauth
+asysocks
+minikerberos
+asn1crypto
+asn1tools
+Pillow
+pyperclip
+pycryptodome
+pyasn1
+six
 termcolor
 xmltodict
+requests-ntlm
+requests-credssp
+oscrypto @ git+https://github.com/wbond/oscrypto.git@d5f3437
+# Optional: PyQt6 is required only for the RDP GUI client
+# Install it manually if you need RDP support:
+#   pip install PyQt6

@@ -1,3 +1,4 @@
+import os
 import sys
 import asyncio
 import traceback
@@ -16,13 +17,65 @@ from aardwolf.commons.queuedata.clipboard import RDP_CLIPBOARD_DATA_TXT
 from aardwolf.commons.queuedata.constants import MOUSEBUTTON, VIDEO_FORMAT
 from aardwolf.commons.target import RDPConnectionDialect
 
-from PIL.ImageQt import ImageQt
-
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel #qApp, 
-from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, Qt
-from PyQt6.QtGui import QPainter, QImage, QPixmap
-
-import pyperclip
+# PyQt6 and GUI-related imports are optional to avoid crashes in headless environments.
+# When unavailable, the module still loads but RDP.connect() will raise a clear error.
+_QT_AVAILABLE = False
+_QT_IMPORT_ERROR = None
+try:
+	from PIL.ImageQt import ImageQt
+	from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel
+	from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, Qt
+	from PyQt6.QtGui import QPainter, QImage, QPixmap
+	import pyperclip
+	_QT_AVAILABLE = True
+except (ImportError, RuntimeError) as e:
+	_QT_IMPORT_ERROR = e
+	# Provide stubs so class definitions don't fail at import time
+	class _StubMeta(type):
+		def __getattr__(cls, name):
+			return None
+	class QObject(metaclass=_StubMeta):
+		pass
+	class QMainWindow(metaclass=_StubMeta):
+		pass
+	class QThread:
+		pass
+	class Qt:
+		class Key:
+			Key_End = Key_Down = Key_PageDown = Key_Insert = Key_Delete = 0
+			Key_Print = Key_Home = Key_Up = Key_PageUp = Key_Left = Key_Right = 0
+			Key_Meta = Key_Enter = Key_Menu = Key_Pause = Key_Slash = Key_Period = 0
+			Key_Escape = Key_Shift = Key_Control = Key_V = Key_Alt = Key_NumLock = 0
+		class MouseButton:
+			LeftButton = RightButton = MiddleButton = 0
+			ExtraButton1 = ExtraButton2 = ExtraButton3 = 0
+			ExtraButton4 = ExtraButton5 = ExtraButton6 = 0
+		class KeyboardModifier:
+			ShiftModifier = ControlModifier = AltModifier = 0
+			KeypadModifier = MetaModifier = 0
+		class AlignmentFlag:
+			AlignCenter = 0
+	def pyqtSignal(*args, **kwargs):
+		return None
+	def pyqtSlot(*args, **kwargs):
+		def decorator(func):
+			return func
+		return decorator
+	class QImage:
+		class Format:
+			Format_RGB32 = 0
+	class QPixmap:
+		pass
+	class QLabel:
+		pass
+	class QPainter:
+		pass
+	class QApplication:
+		pass
+	class ImageQt:
+		pass
+	import types
+	pyperclip = types.ModuleType('pyperclip')
 
 
 # with the help of
@@ -459,9 +512,26 @@ class RDP:
 		self.pfxpass = pfxpass
 	
 	def connect(self):
-		try:
-			# from aardwolf.extensions.RDPEDYC.vchannels.socksoverrdp import SocksOverRDPChannel
+		if not _QT_AVAILABLE:
+			display = os.environ.get('DISPLAY', '')
+			wayland = os.environ.get('WAYLAND_DISPLAY', '')
+			msg = (
+				f"RDP GUI is not available: {_QT_IMPORT_ERROR}\n"
+				"The RDP client requires PyQt6 and a graphical display.\n"
+			)
+			if not display and not wayland:
+				msg += (
+					"No DISPLAY or WAYLAND_DISPLAY environment variable detected (headless environment).\n"
+					"To use RDP in a headless environment, run with a virtual framebuffer:\n"
+					"  xvfb-run python entraptc.py rdp ...\n"
+					"Or install PyQt6 if it is missing:\n"
+					"  pip install PyQt6"
+				)
+			else:
+				msg += "Install PyQt6:\n  pip install PyQt6"
+			raise RuntimeError(msg)
 
+		try:
 			width, height = '1024x768'.split('x')
 			height = int(height)
 			width = int(width)
